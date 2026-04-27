@@ -664,7 +664,7 @@ const INV_DEFAULT = [
   { id: 1004, nombre: 'Pampa CL22 (ON)',      moneda: 'USD', montoInvertido: 597.66,  valorActual: 597.66,  fecha: '2025-04-01', notas: '580 MGCNO' },
 ];
 let inversiones = JSON.parse(localStorage.getItem('fin_inv') || 'null');
-if (!inversiones) { inversiones = INV_DEFAULT; }
+if (!inversiones || inversiones.length === 0) { inversiones = INV_DEFAULT; }
 
 function save() {
   localStorage.setItem('fin_txs', JSON.stringify(txs));
