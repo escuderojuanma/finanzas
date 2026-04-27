@@ -30,7 +30,8 @@
   --radius: 16px;
   --radius-sm: 10px;
   --nav-h: 64px;
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 16px);
+  --nav-total: 88px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -58,25 +59,24 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
 /* Layout */
 #app { display: flex; flex-direction: column; height: 100%; }
-#content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px); }
+#content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--nav-total) + 24px); }
 #content::-webkit-scrollbar { display: none; }
 
 /* Bottom nav */
 #nav {
   position: fixed; bottom: 0; left: 0; right: 0;
-  height: calc(var(--nav-h) + var(--safe-bottom));
-  padding-bottom: var(--safe-bottom);
+  height: var(--nav-total);
+  padding-bottom: max(var(--safe-bottom), 16px);
   background: var(--surface);
   border-top: 1px solid var(--border);
-  display: flex; align-items: stretch;
+  display: flex; align-items: flex-start; padding-top: 8px;
   z-index: 100;
-  backdrop-filter: blur(12px);
 }
 .nav-btn {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
   gap: 3px; border: none; background: none; cursor: pointer;
   color: var(--text3); font-size: 10px; font-family: 'DM Sans', sans-serif;
-  padding: 8px 4px; transition: color 0.15s;
+  padding: 6px 4px 0; transition: color 0.15s; min-height: 56px;
 }
 .nav-btn.active { color: var(--text); }
 .nav-btn svg { width: 22px; height: 22px; }
@@ -236,7 +236,7 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 
 /* Toast */
 #toast {
-  position: fixed; bottom: calc(var(--nav-h) + var(--safe-bottom) + 12px); left: 50%; transform: translateX(-50%) translateY(80px);
+  position: fixed; bottom: calc(var(--nav-total) + 12px); left: 50%; transform: translateX(-50%) translateY(80px);
   background: var(--text); color: var(--bg); padding: 11px 20px; border-radius: 99px;
   font-size: 13px; font-weight: 500; z-index: 200; transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
   white-space: nowrap;
