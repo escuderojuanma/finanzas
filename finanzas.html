@@ -319,54 +319,94 @@ canvas { width: 100% !important; }
       <div class="page-header"><h1>Registrar</h1></div>
 
       <div class="card">
-        <div class="tipo-toggle">
+        <div class="tipo-toggle" style="grid-template-columns:1fr 1fr 1fr">
           <button class="tipo-btn active gasto" id="btn-gasto" onclick="setTipo('gasto')">Gasto</button>
           <button class="tipo-btn ingreso" id="btn-ingreso" onclick="setTipo('ingreso')">Ingreso</button>
+          <button class="tipo-btn" id="btn-cambio" onclick="setTipo('cambio')" style="font-size:13px">Cambio $</button>
         </div>
-        <div class="form-row">
+
+        <!-- Campos normales (gasto/ingreso) -->
+        <div id="form-normal">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Moneda</label>
+              <select id="f-moneda">
+                <option value="ARS">ARS $</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Monto</label>
+              <input type="number" id="f-monto" placeholder="0" inputmode="decimal">
+            </div>
+          </div>
           <div class="form-group">
-            <label class="form-label">Moneda</label>
-            <select id="f-moneda" onchange="onMonedaChange(this.value)">
-              <option value="ARS">ARS $</option>
-              <option value="USD">USD</option>
+            <label class="form-label">Descripción</label>
+            <input type="text" id="f-desc" placeholder="Ej: supermercado Coto">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Categoría</label>
+              <select id="f-cat"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fecha</label>
+              <input type="date" id="f-fecha">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Medio de pago</label>
+            <select id="f-medio">
+              <option>Efectivo</option><option>Débito</option><option>Crédito Visa</option><option>Crédito Mastercard</option><option>Transferencia</option><option>Mercado Pago</option>
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label" id="f-monto-label">Monto (ARS)</label>
-            <input type="number" id="f-monto" placeholder="0" inputmode="decimal">
+          <div id="inv-toggle-wrap" style="display:none">
+            <div class="inv-toggle-row" onclick="toggleDestinarInv()">
+              <span class="inv-toggle-label">📈 Destinar a inversión</span>
+              <div class="inv-toggle-switch" id="inv-switch"></div>
+            </div>
           </div>
+          <button class="btn-primary" onclick="addTx()">Registrar</button>
         </div>
-        <div class="form-group" id="f-tc-wrap" style="display:none">
-          <label class="form-label">Tipo de cambio (ARS por USD)</label>
-          <input type="number" id="f-tc" placeholder="Ej: 1250" inputmode="decimal">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Descripción</label>
-          <input type="text" id="f-desc" placeholder="Ej: supermercado Coto">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Categoría</label>
-            <select id="f-cat"></select>
+
+        <!-- Campos cambio de moneda -->
+        <div id="form-cambio" style="display:none">
+          <div style="background:var(--blue-bg);border-radius:var(--radius-sm);padding:11px 13px;margin-bottom:12px;font-size:12px;color:var(--blue);line-height:1.5">
+            Registrá cuántos pesos entregás y cuántos dólares recibís (o viceversa).
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Entregás (moneda)</label>
+              <select id="c-moneda-de" onchange="onCambioChange()">
+                <option value="ARS">ARS $</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Monto que entregás</label>
+              <input type="number" id="c-monto-de" placeholder="0" inputmode="decimal" oninput="calcTCDisplay()">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Recibís (moneda)</label>
+              <select id="c-moneda-a" onchange="onCambioChange()">
+                <option value="USD">USD</option>
+                <option value="ARS">ARS $</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Monto que recibís</label>
+              <input type="number" id="c-monto-a" placeholder="0" inputmode="decimal" oninput="calcTCDisplay()">
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Fecha</label>
-            <input type="date" id="f-fecha">
+            <input type="date" id="c-fecha">
           </div>
+          <div id="c-tc-display" style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:DM Mono,monospace"></div>
+          <button class="btn-primary" onclick="addCambio()">Registrar cambio</button>
         </div>
-        <div class="form-group">
-          <label class="form-label">Medio de pago</label>
-          <select id="f-medio">
-            <option>Efectivo</option><option>Débito</option><option>Crédito Visa</option><option>Crédito Mastercard</option><option>Transferencia</option><option>Mercado Pago</option>
-          </select>
-        </div>
-        <div id="inv-toggle-wrap" style="display:none">
-          <div class="inv-toggle-row" onclick="toggleDestinarInv()">
-            <span class="inv-toggle-label">📈 Destinar a inversión</span>
-            <div class="inv-toggle-switch" id="inv-switch"></div>
-          </div>
-        </div>
-        <button class="btn-primary" onclick="addTx()">Registrar</button>
       </div>
 
       <div class="section-divider">O importar desde PDF</div>
@@ -665,16 +705,37 @@ function showScreen(id) {
   if(id==='inversiones') renderInversiones();
 }
 
+function calcSaldos() {
+  let saldoARS = 0, saldoUSD = 0;
+  txs.forEach(t => {
+    if(t.tipo === 'ingreso') {
+      if(t.moneda === 'USD') saldoUSD += t.monto;
+      else saldoARS += t.monto;
+    } else if(t.tipo === 'gasto') {
+      if(t.moneda === 'USD') saldoUSD -= t.monto;
+      else saldoARS -= t.monto;
+    } else if(t.tipo === 'cambio') {
+      // resta de origen, suma a destino
+      if(t.moneda === 'ARS') { saldoARS -= t.monto; saldoUSD += t.montoA; }
+      else { saldoUSD -= t.monto; saldoARS += t.montoA; }
+    }
+  });
+  return { saldoARS, saldoUSD };
+}
+
 // ─── DASHBOARD ──────────────────────────────────────────────────────────────
 function renderDashboard() {
   const m = getThisMonth();
   const prev = getPrevMonth();
   const curr = txsOf(m), prevT = txsOf(prev);
-  const gastos = curr.filter(t=>t.tipo==='gasto').reduce((a,t)=>a+t.monto,0);
-  const ingresos = curr.filter(t=>t.tipo==='ingreso').reduce((a,t)=>a+t.monto,0);
-  const balance = ingresos - gastos;
-  const prevG = prevT.filter(t=>t.tipo==='gasto').reduce((a,t)=>a+t.monto,0);
-  const diffPct = prevG > 0 ? ((gastos-prevG)/prevG*100).toFixed(0) : null;
+
+  // ARS only for gastos/ingresos del mes (no mezclar USD)
+  const gastosARS = curr.filter(t=>t.tipo==='gasto' && t.moneda!=='USD').reduce((a,t)=>a+t.monto,0);
+  const gastosUSD = curr.filter(t=>t.tipo==='gasto' && t.moneda==='USD').reduce((a,t)=>a+t.monto,0);
+  const ingresosARS = curr.filter(t=>t.tipo==='ingreso' && t.moneda!=='USD').reduce((a,t)=>a+t.monto,0);
+  const ingresosUSD = curr.filter(t=>t.tipo==='ingreso' && t.moneda==='USD').reduce((a,t)=>a+t.monto,0);
+  const prevGARS = prevT.filter(t=>t.tipo==='gasto' && t.moneda!=='USD').reduce((a,t)=>a+t.monto,0);
+  const diffPct = prevGARS > 0 ? ((gastosARS-prevGARS)/prevGARS*100).toFixed(0) : null;
 
   const monthName = new Date().toLocaleDateString('es-AR',{month:'long',year:'numeric'});
   document.getElementById('dash-month').textContent = monthName.charAt(0).toUpperCase()+monthName.slice(1);
@@ -683,13 +744,24 @@ function renderDashboard() {
   const greet = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
   document.getElementById('dash-greeting').textContent = greet + ' 👋';
 
+  const { saldoARS, saldoUSD } = calcSaldos();
+
+  const ingResumen = ingresosUSD > 0
+    ? `$${fmt(ingresosARS,true).replace('$','')} + USD ${ingresosUSD.toLocaleString('es-AR')}`
+    : fmt(ingresosARS,true);
+  const gasResumen = gastosUSD > 0
+    ? `$${fmt(gastosARS,true).replace('$','')} + USD ${gastosUSD.toLocaleString('es-AR')}`
+    : fmt(gastosARS,true);
+
   document.getElementById('metrics-top').innerHTML = `
-    <div class="metric green"><div class="m-label">Ingresos</div><div class="m-val">${fmt(ingresos,true)}</div><div class="m-sub">este mes</div></div>
-    <div class="metric red"><div class="m-label">Gastos</div><div class="m-val">${fmt(gastos,true)}</div><div class="m-sub">${diffPct!==null?(diffPct>=0?'▲ ':'▼ ')+Math.abs(diffPct)+'% vs anterior':'este mes'}</div></div>
+    <div class="metric green"><div class="m-label">Ingresos mes</div><div class="m-val" style="font-size:${ingresosUSD>0?'13px':'18px'}">${ingResumen}</div></div>
+    <div class="metric red"><div class="m-label">Gastos mes</div><div class="m-val" style="font-size:${gastosUSD>0?'13px':'18px'}">${gasResumen}</div><div class="m-sub">${diffPct!==null?(diffPct>=0?'▲ ':'▼ ')+Math.abs(diffPct)+'% vs anterior':''}</div></div>
+    <div class="metric blue"><div class="m-label">Caja ARS</div><div class="m-val">${fmt(saldoARS,true)}</div><div class="m-sub">saldo acumulado</div></div>
+    <div class="metric blue"><div class="m-label">Caja USD</div><div class="m-val">USD ${Math.round(saldoUSD).toLocaleString('es-AR')}</div><div class="m-sub">saldo acumulado</div></div>
   `;
 
   const catMap2 = {};
-  curr.filter(t=>t.tipo==='gasto').forEach(t => { catMap2[t.cat] = (catMap2[t.cat]||0)+t.monto; });
+  curr.filter(t=>t.tipo==='gasto' && t.moneda!=='USD').forEach(t => { catMap2[t.cat] = (catMap2[t.cat]||0)+t.monto; });
   const sorted = Object.entries(catMap2).sort((a,b)=>b[1]-a[1]).slice(0,6);
   const maxVal = sorted[0]?.[1]||1;
   document.getElementById('cat-bars').innerHTML = sorted.length ? sorted.map(([cat,val]) => {
@@ -707,25 +779,36 @@ function renderDashboard() {
     recent.map(t => txHTML(t, false)).join('') :
     '<div class="empty"><div class="empty-icon">💸</div><p>Registrá tu primer movimiento</p></div>';
 
-  const ins = buildInsights(gastos, ingresos, sorted, diffPct);
+  const ins = buildInsights(gastosARS, ingresosARS, sorted, diffPct);
   document.getElementById('insights').innerHTML = ins.map(i=>`<div class="insight ${i.type}">${i.text}</div>`).join('');
 }
 
 function txHTML(t, showDel) {
   const c = catMap[t.cat]||{emoji:'📋',color:'#888'};
-  const sign = t.tipo==='gasto' ? '-' : '+';
-  const montoDisplay = t.montoUSD ? `USD ${t.montoUSD.toLocaleString('es-AR')}` : fmt(t.monto, true);
-  const subDisplay = t.montoUSD ? `≈ ${fmt(t.monto, true)} ARS` : '';
+  let sign, montoDisplay, iconEmoji, iconColor;
+  if(t.tipo === 'cambio') {
+    const symDe = t.moneda === 'USD' ? 'USD ' : '$';
+    const symA = t.monedaA === 'USD' ? 'USD ' : '$';
+    montoDisplay = `${symDe}${t.monto.toLocaleString('es-AR')} → ${symA}${t.montoA.toLocaleString('es-AR')}`;
+    sign = '';
+    iconEmoji = '💱';
+    iconColor = '#378ADD';
+  } else {
+    sign = t.tipo==='gasto' ? '-' : '+';
+    const sym = t.moneda === 'USD' ? 'USD ' : '$';
+    montoDisplay = sym + (t.moneda === 'USD' ? t.monto.toLocaleString('es-AR') : fmt(t.monto, true).replace('$',''));
+    iconEmoji = c.emoji;
+    iconColor = c.color;
+  }
   return `<div class="tx-item">
-    <div class="tx-icon" style="background:${c.color}1a">${c.emoji}</div>
+    <div class="tx-icon" style="background:${iconColor}1a">${iconEmoji}</div>
     <div class="tx-body">
       <div class="tx-desc">${t.desc}</div>
-      <div class="tx-meta">${t.cat}${t.medio?' · '+t.medio:''}</div>
+      <div class="tx-meta">${t.cat||''}${t.medio?' · '+t.medio:''}</div>
     </div>
     <div class="tx-right">
-      <div class="tx-amount ${t.tipo}">${sign} ${montoDisplay}</div>
-      <div class="tx-date-small">${subDisplay || t.fecha}</div>
-      ${subDisplay ? `<div class="tx-date-small">${t.fecha}</div>` : ''}
+      <div class="tx-amount ${t.tipo==='gasto'?'gasto':t.tipo==='ingreso'?'ingreso':''}">${sign}${sign?' ':''} ${montoDisplay}</div>
+      <div class="tx-date-small">${t.fecha}</div>
     </div>
     ${showDel ? `<button class="tx-del" onclick="deleteTx(${t.id})">✕</button>` : ''}
   </div>`;
@@ -746,19 +829,63 @@ function buildInsights(gastos, ingresos, sorted, diffPct) {
 }
 
 // ─── REGISTRAR ──────────────────────────────────────────────────────────────
-function onMonedaChange(val) {
-  const isUSD = val === 'USD';
-  document.getElementById('f-tc-wrap').style.display = isUSD ? 'block' : 'none';
-  document.getElementById('f-monto-label').textContent = isUSD ? 'Monto (USD)' : 'Monto (ARS)';
-}
-
 function setTipo(tipo) {
   currentTipo = tipo;
   document.getElementById('btn-gasto').className = 'tipo-btn' + (tipo==='gasto'?' active gasto':'');
   document.getElementById('btn-ingreso').className = 'tipo-btn' + (tipo==='ingreso'?' active ingreso':'');
+  document.getElementById('btn-cambio').className = 'tipo-btn' + (tipo==='cambio'?' active ingreso':'');
+  document.getElementById('form-normal').style.display = tipo==='cambio' ? 'none' : 'block';
+  document.getElementById('form-cambio').style.display = tipo==='cambio' ? 'block' : 'none';
   document.getElementById('inv-toggle-wrap').style.display = tipo==='ingreso' ? 'block' : 'none';
-  if(tipo==='gasto') { destinarInv = false; document.getElementById('inv-switch').classList.remove('on'); }
+  if(tipo!=='ingreso') { destinarInv = false; document.getElementById('inv-switch').classList.remove('on'); }
   buildCatSelect();
+}
+
+function onCambioChange() {
+  const de = document.getElementById('c-moneda-de').value;
+  const a = document.getElementById('c-moneda-a').value;
+  // auto-flip destination if same
+  if(de === a) {
+    document.getElementById('c-moneda-a').value = de === 'ARS' ? 'USD' : 'ARS';
+  }
+  calcTCDisplay();
+}
+
+function calcTCDisplay() {
+  const mDe = parseFloat(document.getElementById('c-monto-de').value);
+  const mA = parseFloat(document.getElementById('c-monto-a').value);
+  const monDe = document.getElementById('c-moneda-de').value;
+  const monA = document.getElementById('c-moneda-a').value;
+  const el = document.getElementById('c-tc-display');
+  if(mDe > 0 && mA > 0 && monDe !== monA) {
+    const tc = monDe === 'ARS' ? (mDe/mA) : (mA/mDe);
+    el.textContent = `TC implícito: $${tc.toLocaleString('es-AR', {maximumFractionDigits:2})} ARS/USD`;
+  } else el.textContent = '';
+}
+
+function addCambio() {
+  const monDe = document.getElementById('c-moneda-de').value;
+  const monA = document.getElementById('c-moneda-a').value;
+  const mDe = parseFloat(document.getElementById('c-monto-de').value);
+  const mA = parseFloat(document.getElementById('c-monto-a').value);
+  const fecha = document.getElementById('c-fecha').value;
+  if(!mDe || mDe <= 0 || !mA || mA <= 0) { showToast('Ingresá ambos montos'); return; }
+  if(!fecha) { showToast('Seleccioná la fecha'); return; }
+  if(monDe === monA) { showToast('Las monedas deben ser distintas'); return; }
+
+  txs.push({
+    id: Date.now(), tipo: 'cambio',
+    monto: mDe, moneda: monDe,
+    montoA: mA, monedaA: monA,
+    desc: `Cambio ${monDe} → ${monA}`, fecha, cat: 'Cambio de moneda', medio: ''
+  });
+  save();
+  document.getElementById('c-monto-de').value = '';
+  document.getElementById('c-monto-a').value = '';
+  document.getElementById('c-tc-display').textContent = '';
+  showToast(`Cambio registrado ✓`);
+  setTipo('gasto');
+  showScreen('dashboard');
 }
 
 function buildCatSelect() {
@@ -780,36 +907,24 @@ function addTx() {
   if(!desc) { showToast('Ingresá una descripción'); return; }
   if(!fecha) { showToast('Seleccioná la fecha'); return; }
 
-  let montoARS = monto;
-  let montoUSD = null;
-  if(moneda === 'USD') {
-    const tc = parseFloat(document.getElementById('f-tc').value);
-    if(!tc || tc <= 0) { showToast('Ingresá el tipo de cambio'); return; }
-    montoARS = monto * tc;
-    montoUSD = monto;
-  }
-
   txs.push({
-    id: Date.now(), tipo: currentTipo, monto: montoARS, montoUSD, moneda,
+    id: Date.now(), tipo: currentTipo, monto, moneda,
     desc, fecha,
     cat: document.getElementById('f-cat').value,
     medio: document.getElementById('f-medio').value,
     paraInversion: destinarInv
   });
+
   if(currentTipo === 'ingreso' && destinarInv) {
-    capitalDisponible += montoARS;
-    const dispStr = moneda === 'USD' ? `USD ${monto.toLocaleString('es-AR')} (= $${Math.round(montoARS).toLocaleString('es-AR')})` : `$${Math.round(montoARS).toLocaleString('es-AR')}`;
-    showToast(`Registrado. ${dispStr} disponible para invertir ✓`);
+    capitalDisponible += monto;
+    showToast(`Registrado. ${moneda === 'USD' ? 'USD' : '$'} ${monto.toLocaleString('es-AR')} disponible para invertir ✓`);
   } else {
-    const montoStr = moneda === 'USD' ? `USD ${monto.toLocaleString('es-AR')}` : `$${Math.round(montoARS).toLocaleString('es-AR')}`;
-    showToast(`${montoStr} registrado ✓`);
+    showToast(`${moneda === 'USD' ? 'USD' : '$'} ${monto.toLocaleString('es-AR')} registrado ✓`);
   }
   save();
   document.getElementById('f-monto').value = '';
   document.getElementById('f-desc').value = '';
   document.getElementById('f-moneda').value = 'ARS';
-  document.getElementById('f-tc-wrap').style.display = 'none';
-  document.getElementById('f-monto-label').textContent = 'Monto (ARS)';
   destinarInv = false;
   document.getElementById('inv-switch').classList.remove('on');
   document.getElementById('inv-toggle-wrap').style.display = 'none';
@@ -1278,8 +1393,10 @@ try {
   const hoy = new Date().toISOString().slice(0,10);
   const fFecha = document.getElementById('f-fecha');
   const invFecha = document.getElementById('inv-fecha');
+  const cFecha = document.getElementById('c-fecha');
   if(fFecha) fFecha.value = hoy;
   if(invFecha) invFecha.value = hoy;
+  if(cFecha) cFecha.value = hoy;
   buildCatSelect();
   renderDashboard();
 } catch(e) { console.error('Init error:', e); }
