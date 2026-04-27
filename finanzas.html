@@ -497,6 +497,9 @@ canvas { width: 100% !important; }
         <div class="card">
           <div id="inv-positions-list"></div>
         </div>
+        <div id="inv-load-defaults-wrap" style="display:none">
+          <button class="btn-secondary" onclick="loadDefaultInversiones()" style="margin-top:0">Cargar posiciones de Cocos (27/04/2025)</button>
+        </div>
       </div>
 
       <!-- TAB: Agregar posición -->
@@ -1213,7 +1216,9 @@ function renderInversiones() {
   const list = document.getElementById('inv-positions-list');
   if(!inversiones.length) {
     list.innerHTML = '<div class="empty"><div class="empty-icon">📈</div><p>Sin posiciones todavía.<br>Agregá tu primera inversión.</p></div>';
+    document.getElementById('inv-load-defaults-wrap').style.display = 'block';
   } else {
+    document.getElementById('inv-load-defaults-wrap').style.display = 'none';
     list.innerHTML = inversiones.map(inv => {
       const c = getInvColor(inv.nombre);
       const initials = inv.nombre.replace(/[()]/g,'').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
@@ -1315,6 +1320,13 @@ function confirmEditInv(id) {
     const inv = inversiones.find(i=>i.id===id);
     if(inv) { inv.valorActual = v; save(); renderInversiones(); showToast('Valor actualizado ✓'); }
   }
+}
+
+function loadDefaultInversiones() {
+  inversiones = [...INV_DEFAULT];
+  save();
+  renderInversiones();
+  showToast('Posiciones cargadas ✓');
 }
 
 function deleteInv(id) {
