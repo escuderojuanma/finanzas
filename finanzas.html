@@ -261,6 +261,32 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 canvas { width: 100% !important; }
 
 .section-divider { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 0 10px; margin-top: 4px; }
+.inv-position { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border); }
+.inv-position:last-child { border-bottom: none; padding-bottom: 0; }
+.inv-position:first-child { padding-top: 0; }
+.inv-badge { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; font-family: 'DM Mono', monospace; flex-shrink: 0; letter-spacing: -0.3px; }
+.inv-body { flex: 1; min-width: 0; }
+.inv-name { font-size: 14px; font-weight: 500; }
+.inv-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.inv-right { text-align: right; flex-shrink: 0; }
+.inv-valor { font-size: 14px; font-weight: 600; font-family: 'DM Mono', monospace; }
+.inv-pnl { font-size: 11px; margin-top: 2px; font-family: 'DM Mono', monospace; }
+.inv-pnl.pos { color: var(--green); }
+.inv-pnl.neg { color: var(--red); }
+.inv-pnl.neu { color: var(--text3); }
+.inv-del { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 15px; padding: 4px; flex-shrink: 0; }
+.capital-banner { background: var(--green-bg); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.capital-banner .cap-label { font-size: 12px; color: var(--green); font-weight: 500; }
+.capital-banner .cap-val { font-size: 16px; font-weight: 600; color: var(--green); font-family: 'DM Mono', monospace; }
+.sub-tabs { display: flex; gap: 4px; background: var(--surface2); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 14px; }
+.sub-tab { flex: 1; padding: 8px; font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif; border: none; background: transparent; border-radius: 8px; cursor: pointer; color: var(--text3); transition: all 0.15s; text-align: center; }
+.sub-tab.active { background: var(--surface); color: var(--text); }
+.inv-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--blue-bg); border-radius: var(--radius-sm); margin-bottom: 12px; cursor: pointer; }
+.inv-toggle-label { font-size: 13px; font-weight: 500; color: var(--blue); }
+.inv-toggle-switch { width: 40px; height: 24px; border-radius: 99px; background: var(--border2); position: relative; transition: background 0.2s; flex-shrink: 0; }
+.inv-toggle-switch.on { background: var(--blue); }
+.inv-toggle-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: white; transition: transform 0.2s; }
+.inv-toggle-switch.on::after { transform: translateX(16px); }
 </style>
 </head>
 <body>
@@ -321,6 +347,12 @@ canvas { width: 100% !important; }
             <option>Efectivo</option><option>Débito</option><option>Crédito Visa</option><option>Crédito Mastercard</option><option>Transferencia</option><option>Mercado Pago</option>
           </select>
         </div>
+        <div id="inv-toggle-wrap" style="display:none">
+          <div class="inv-toggle-row" onclick="toggleDestinarInv()">
+            <span class="inv-toggle-label">📈 Destinar a inversión</span>
+            <div class="inv-toggle-switch" id="inv-switch"></div>
+          </div>
+        </div>
         <button class="btn-primary" onclick="addTx()">Registrar</button>
       </div>
 
@@ -372,35 +404,128 @@ canvas { width: 100% !important; }
       </div>
     </div>
 
-    <!-- PROYECCIÓN -->
-    <div id="screen-proyeccion" class="screen">
-      <div class="page-header"><h1>Proyección</h1></div>
+    <!-- INVERSIONES -->
+    <div id="screen-inversiones" class="screen">
+      <div class="page-header"><h1>Inversiones</h1></div>
+
+      <!-- Capital disponible -->
+      <div id="capital-banner-wrap"></div>
+
+      <!-- Resumen portfolio -->
+      <div class="metrics" id="inv-metrics-top" style="margin-bottom:12px"></div>
+
+      <!-- Meta USD -->
       <div class="card">
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Capital actual (ARS)</label>
-            <input type="number" id="p-capital" value="500000" inputmode="decimal" oninput="renderProyeccion()"></div>
-          <div class="form-group"><label class="form-label">Ahorro mensual (ARS)</label>
-            <input type="number" id="p-ahorro" value="150000" inputmode="decimal" oninput="renderProyeccion()"></div>
+        <div class="card-title">Meta de capital (USD 180.000–200.000)</div>
+        <div class="progress-header">
+          <span id="inv-meta-label" style="font-size:13px;color:var(--text2)">USD 0 acumulado</span>
+          <span id="inv-meta-pct" class="progress-pct">0%</span>
         </div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Rendimiento anual (%)</label>
-            <input type="number" id="p-rend" value="80" oninput="renderProyeccion()"></div>
+        <div class="progress-track"><div class="progress-fill" id="inv-meta-fill" style="width:0%"></div></div>
+        <div class="progress-footer" style="margin-top:6px">
+          <span>Objetivo: USD 180.000</span>
+          <span id="inv-meta-faltan">Faltan: USD 180.000</span>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+          <input type="number" id="inv-tc" placeholder="Tipo de cambio USD" inputmode="decimal" style="flex:1" oninput="renderInversiones()">
+          <span style="font-size:12px;color:var(--text3);flex-shrink:0">ARS/USD</span>
+        </div>
+      </div>
+
+      <!-- Sub tabs -->
+      <div class="sub-tabs">
+        <button class="sub-tab active" onclick="invTab('portfolio')">Portfolio</button>
+        <button class="sub-tab" onclick="invTab('agregar')">Agregar posición</button>
+        <button class="sub-tab" onclick="invTab('proyeccion')">Proyección</button>
+      </div>
+
+      <!-- TAB: Portfolio -->
+      <div id="inv-tab-portfolio">
+        <div class="card">
+          <div id="inv-positions-list"></div>
+        </div>
+      </div>
+
+      <!-- TAB: Agregar posición -->
+      <div id="inv-tab-agregar" style="display:none">
+        <div class="card">
+          <div class="card-title">Nueva posición</div>
+          <div id="capital-disp-mini" style="margin-bottom:12px"></div>
+          <div class="form-group">
+            <label class="form-label">Instrumento</label>
+            <select id="inv-instrumento">
+              <option>COCOAUSD</option>
+              <option>YPF 2029 (ON)</option>
+              <option>Pampa Energía (ON)</option>
+              <option>Pampa CL22 (ON)</option>
+              <option>SPY (CEDEAR)</option>
+              <option>QQQ (CEDEAR)</option>
+              <option>Otro</option>
+            </select>
+          </div>
+          <div id="inv-otro-nombre-wrap" style="display:none" class="form-group">
+            <label class="form-label">Nombre del instrumento</label>
+            <input type="text" id="inv-otro-nombre" placeholder="Ej: Letes USD">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Moneda</label>
+              <select id="inv-moneda" onchange="updateInvMoneda()">
+                <option value="USD">USD</option>
+                <option value="ARS">ARS</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Monto invertido</label>
+              <input type="number" id="inv-monto-invertido" placeholder="0" inputmode="decimal">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Valor actual <span id="inv-moneda-label" style="color:var(--text3)">(USD)</span></label>
+            <input type="number" id="inv-valor-actual" placeholder="0 — dejá vacío si es igual al invertido" inputmode="decimal">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha de compra</label>
+            <input type="date" id="inv-fecha">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notas (opcional)</label>
+            <input type="text" id="inv-notas" placeholder="Ej: vence 2029, cupón 8.5%">
+          </div>
+          <div id="usar-capital-wrap" style="display:none;margin-bottom:12px">
+            <div class="inv-toggle-row" onclick="toggleUsarCapital()" style="background:var(--green-bg)">
+              <span class="inv-toggle-label" style="color:var(--green)">💰 Usar capital disponible</span>
+              <div class="inv-toggle-switch" id="usar-capital-switch"></div>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="addInversion()">Agregar posición</button>
+        </div>
+      </div>
+
+      <!-- TAB: Proyección -->
+      <div id="inv-tab-proyeccion" style="display:none">
+        <div class="card">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Ahorro mensual (ARS)</label>
+              <input type="number" id="p-ahorro" value="150000" inputmode="decimal" oninput="renderProyeccion()"></div>
+            <div class="form-group"><label class="form-label">Rendimiento anual (%)</label>
+              <input type="number" id="p-rend" value="80" oninput="renderProyeccion()"></div>
+          </div>
           <div class="form-group"><label class="form-label">Años</label>
             <input type="number" id="p-anos" value="5" min="1" max="30" oninput="renderProyeccion()"></div>
         </div>
-      </div>
-      <div class="card">
-        <div class="card-title">Evolución patrimonial</div>
-        <div id="proj-canvas-wrap"><canvas id="proj-chart" role="img" aria-label="Proyección patrimonial"></canvas></div>
-        <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text3)">
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:2px;background:var(--green);display:inline-block;border-radius:2px"></span>Con rendimiento</span>
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:2px;background:var(--blue);display:inline-block;border-radius:2px;opacity:0.5"></span>Solo ahorro</span>
+        <div class="card">
+          <div class="card-title">Evolución patrimonial</div>
+          <div id="proj-canvas-wrap"><canvas id="proj-chart" role="img" aria-label="Proyección patrimonial"></canvas></div>
+          <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text3)">
+            <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:2px;background:var(--green);display:inline-block;border-radius:2px"></span>Con rendimiento</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:2px;background:var(--blue);display:inline-block;border-radius:2px;opacity:0.5"></span>Solo ahorro</span>
+          </div>
         </div>
+        <div class="card"><div id="proj-result"></div></div>
       </div>
-      <div class="card"><div id="proj-result"></div></div>
-    </div>
 
-  </div><!-- /content -->
+    </div>
 
   <!-- Bottom nav -->
   <nav id="nav">
@@ -420,9 +545,9 @@ canvas { width: 100% !important; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
       Metas<div class="dot"></div>
     </button>
-    <button class="nav-btn" onclick="showScreen('proyeccion')">
+    <button class="nav-btn" onclick="showScreen('inversiones')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-      Proyección<div class="dot"></div>
+      Inversiones<div class="dot"></div>
     </button>
   </nav>
 </div>
@@ -473,12 +598,18 @@ const catMap = {};
 
 let txs = JSON.parse(localStorage.getItem('fin_txs') || '[]');
 let metas = JSON.parse(localStorage.getItem('fin_metas') || '[]');
+let inversiones = JSON.parse(localStorage.getItem('fin_inv') || '[]');
+let capitalDisponible = parseFloat(localStorage.getItem('fin_cap') || '0');
 let currentTipo = 'gasto';
 let importedTxs = [];
+let destinarInv = false;
+let usarCapital = false;
 
 function save() {
   localStorage.setItem('fin_txs', JSON.stringify(txs));
   localStorage.setItem('fin_metas', JSON.stringify(metas));
+  localStorage.setItem('fin_inv', JSON.stringify(inversiones));
+  localStorage.setItem('fin_cap', String(capitalDisponible));
 }
 
 // ─── UTILS ──────────────────────────────────────────────────────────────────
@@ -508,7 +639,7 @@ function showToast(msg) {
 }
 
 // ─── NAV ────────────────────────────────────────────────────────────────────
-const screens = ['dashboard','registrar','historial','metas','proyeccion'];
+const screens = ['dashboard','registrar','historial','metas','inversiones'];
 function showScreen(id) {
   screens.forEach((s,i) => {
     document.getElementById('screen-'+s).classList.toggle('active', s===id);
@@ -518,7 +649,7 @@ function showScreen(id) {
   if(id==='dashboard') renderDashboard();
   if(id==='historial') { buildMonthFilter(); renderHistorial(); }
   if(id==='metas') renderMetas();
-  if(id==='proyeccion') renderProyeccion();
+  if(id==='inversiones') renderInversiones();
 }
 
 // ─── DASHBOARD ──────────────────────────────────────────────────────────────
@@ -603,12 +734,19 @@ function setTipo(tipo) {
   currentTipo = tipo;
   document.getElementById('btn-gasto').className = 'tipo-btn' + (tipo==='gasto'?' active gasto':'');
   document.getElementById('btn-ingreso').className = 'tipo-btn' + (tipo==='ingreso'?' active ingreso':'');
+  document.getElementById('inv-toggle-wrap').style.display = tipo==='ingreso' ? 'block' : 'none';
+  if(tipo==='gasto') { destinarInv = false; document.getElementById('inv-switch').classList.remove('on'); }
   buildCatSelect();
 }
 
 function buildCatSelect() {
   const cats = currentTipo === 'gasto' ? CATS_GASTO : CATS_INGRESO;
   document.getElementById('f-cat').innerHTML = cats.map(c=>`<option>${c.name}</option>`).join('');
+}
+
+function toggleDestinarInv() {
+  destinarInv = !destinarInv;
+  document.getElementById('inv-switch').classList.toggle('on', destinarInv);
 }
 
 function addTx() {
@@ -621,12 +759,22 @@ function addTx() {
   txs.push({
     id: Date.now(), tipo: currentTipo, monto, desc, fecha,
     cat: document.getElementById('f-cat').value,
-    medio: document.getElementById('f-medio').value
+    medio: document.getElementById('f-medio').value,
+    paraInversion: destinarInv
   });
+  if(currentTipo === 'ingreso' && destinarInv) {
+    capitalDisponible += monto;
+    showToast(`Registrado. $${Math.round(monto).toLocaleString('es-AR')} disponible para invertir ✓`);
+  } else {
+    showToast('Transacción registrada ✓');
+  }
   save();
   document.getElementById('f-monto').value = '';
   document.getElementById('f-desc').value = '';
-  showToast('Transacción registrada ✓');
+  destinarInv = false;
+  document.getElementById('inv-switch').classList.remove('on');
+  document.getElementById('inv-toggle-wrap').style.display = 'none';
+  setTipo('gasto');
   showScreen('dashboard');
 }
 
@@ -825,22 +973,202 @@ function updateMeta(id, val) {
   m.actual = v; save(); renderMetas(); showToast('Meta actualizada ✓');
 }
 
+// ─── INVERSIONES ─────────────────────────────────────────────────────────────
+const INV_COLORS = {
+  'COCOAUSD':      {color:'#1a5fa8', bg:'#e6f0fb'},
+  'YPF 2029 (ON)': {color:'#2d7a4f', bg:'#e8f5ee'},
+  'Pampa Energía (ON)':{color:'#9a5c00', bg:'#fef3db'},
+  'Pampa CL22 (ON)':{color:'#b83232', bg:'#fdeaea'},
+  'SPY (CEDEAR)':  {color:'#7F77DD', bg:'#f0efff'},
+  'QQQ (CEDEAR)':  {color:'#D4537E', bg:'#fdeef5'},
+};
+
+function getInvColor(nombre) {
+  return INV_COLORS[nombre] || {color:'#888780', bg:'#f0ede8'};
+}
+
+function invTab(tab) {
+  ['portfolio','agregar','proyeccion'].forEach(t => {
+    document.getElementById('inv-tab-'+t).style.display = t===tab ? 'block' : 'none';
+    document.querySelectorAll('.sub-tab').forEach((b,i) => {
+      b.classList.toggle('active', ['portfolio','agregar','proyeccion'][i]===tab);
+    });
+  });
+  if(tab==='proyeccion') renderProyeccion();
+}
+
+function updateInvMoneda() {
+  const m = document.getElementById('inv-moneda').value;
+  document.getElementById('inv-moneda-label').textContent = '('+m+')';
+}
+
+function toggleUsarCapital() {
+  usarCapital = !usarCapital;
+  document.getElementById('usar-capital-switch').classList.toggle('on', usarCapital);
+}
+
+function renderInversiones() {
+  const tc = parseFloat(document.getElementById('inv-tc')?.value) || 0;
+
+  // Totales portfolio
+  let totalUSD = 0, totalInvertidoUSD = 0;
+  inversiones.forEach(inv => {
+    const valorAct = inv.valorActual || inv.montoInvertido;
+    const invertido = inv.montoInvertido;
+    if(inv.moneda === 'USD') {
+      totalUSD += valorAct;
+      totalInvertidoUSD += invertido;
+    } else if(tc > 0) {
+      totalUSD += valorAct / tc;
+      totalInvertidoUSD += invertido / tc;
+    }
+  });
+  const pnlUSD = totalUSD - totalInvertidoUSD;
+  const pnlPct = totalInvertidoUSD > 0 ? (pnlUSD/totalInvertidoUSD*100).toFixed(1) : 0;
+
+  // Métricas top
+  const fmtUSD = v => 'USD ' + Math.round(v).toLocaleString('es-AR');
+  document.getElementById('inv-metrics-top').innerHTML = `
+    <div class="metric blue"><div class="m-label">Valor actual</div><div class="m-val">${fmtUSD(totalUSD)}</div><div class="m-sub">${tc>0?'≈ $'+Math.round(totalUSD*tc).toLocaleString('es-AR'):tc===0?'Ingresá TC':''}</div></div>
+    <div class="metric ${pnlUSD>=0?'green':'red'}"><div class="m-label">Ganancia</div><div class="m-val">${pnlUSD>=0?'+':''}${fmtUSD(pnlUSD)}</div><div class="m-sub">${pnlPct>0?'+':''}${pnlPct}%</div></div>
+  `;
+
+  // Meta USD
+  const META_USD = 180000;
+  const pctMeta = Math.min(100, Math.round(totalUSD/META_USD*100));
+  document.getElementById('inv-meta-label').textContent = `USD ${Math.round(totalUSD).toLocaleString('es-AR')} acumulado`;
+  document.getElementById('inv-meta-pct').textContent = pctMeta + '%';
+  document.getElementById('inv-meta-fill').style.width = pctMeta + '%';
+  document.getElementById('inv-meta-faltan').textContent = `Faltan: USD ${Math.round(Math.max(0,META_USD-totalUSD)).toLocaleString('es-AR')}`;
+
+  // Capital disponible banner
+  const capWrap = document.getElementById('capital-banner-wrap');
+  if(capitalDisponible > 0) {
+    capWrap.innerHTML = `<div class="capital-banner"><div><div class="cap-label">💰 Capital disponible para invertir</div></div><div class="cap-val">$${Math.round(capitalDisponible).toLocaleString('es-AR')}</div></div>`;
+  } else capWrap.innerHTML = '';
+
+  // Lista de posiciones
+  const list = document.getElementById('inv-positions-list');
+  if(!inversiones.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📈</div><p>Sin posiciones todavía.<br>Agregá tu primera inversión.</p></div>';
+  } else {
+    list.innerHTML = inversiones.map(inv => {
+      const c = getInvColor(inv.nombre);
+      const initials = inv.nombre.replace(/[()]/g,'').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+      const valorAct = inv.valorActual || inv.montoInvertido;
+      const pnl = valorAct - inv.montoInvertido;
+      const pnlP = inv.montoInvertido > 0 ? (pnl/inv.montoInvertido*100).toFixed(1) : 0;
+      const monSym = inv.moneda === 'USD' ? 'USD ' : '$';
+      const pnlClass = pnl > 0 ? 'pos' : pnl < 0 ? 'neg' : 'neu';
+      const pnlSign = pnl >= 0 ? '+' : '';
+      return `<div class="inv-position">
+        <div class="inv-badge" style="background:${c.bg};color:${c.color}">${initials}</div>
+        <div class="inv-body">
+          <div class="inv-name">${inv.nombre}</div>
+          <div class="inv-meta">${monSym}${inv.montoInvertido.toLocaleString('es-AR')} invertido${inv.notas?' · '+inv.notas:''}</div>
+        </div>
+        <div class="inv-right">
+          <div class="inv-valor" style="color:${c.color}">${monSym}${valorAct.toLocaleString('es-AR')}</div>
+          <div class="inv-pnl ${pnlClass}">${pnlSign}${monSym}${Math.abs(pnl).toLocaleString('es-AR')} (${pnlSign}${pnlP}%)</div>
+        </div>
+        <button class="inv-del" onclick="editInvValor(${inv.id})">✎</button>
+        <button class="inv-del" onclick="deleteInv(${inv.id})">✕</button>
+      </div>`;
+    }).join('');
+  }
+
+  // Capital mini en tab agregar
+  const capMini = document.getElementById('capital-disp-mini');
+  if(capMini) {
+    if(capitalDisponible > 0) {
+      capMini.innerHTML = `<div class="capital-banner"><div class="cap-label">💰 Capital disponible</div><div class="cap-val">$${Math.round(capitalDisponible).toLocaleString('es-AR')}</div></div>`;
+      document.getElementById('usar-capital-wrap').style.display = 'block';
+    } else {
+      capMini.innerHTML = '';
+      document.getElementById('usar-capital-wrap').style.display = 'none';
+    }
+  }
+}
+
+function addInversion() {
+  const instrumento = document.getElementById('inv-instrumento').value;
+  const nombre = instrumento === 'Otro' ? (document.getElementById('inv-otro-nombre').value.trim() || 'Otro') : instrumento;
+  const moneda = document.getElementById('inv-moneda').value;
+  const montoInvertido = parseFloat(document.getElementById('inv-monto-invertido').value);
+  const valorActualRaw = parseFloat(document.getElementById('inv-valor-actual').value);
+  const valorActual = isNaN(valorActualRaw) ? montoInvertido : valorActualRaw;
+  const fecha = document.getElementById('inv-fecha').value;
+  const notas = document.getElementById('inv-notas').value.trim();
+
+  if(!montoInvertido || montoInvertido <= 0) { showToast('Ingresá el monto invertido'); return; }
+
+  if(usarCapital && capitalDisponible > 0) {
+    const montoARS = montoInvertido;
+    capitalDisponible = Math.max(0, capitalDisponible - montoARS);
+    usarCapital = false;
+    document.getElementById('usar-capital-switch').classList.remove('on');
+  }
+
+  // Verificar si ya existe esa posición para sumar
+  const existing = inversiones.find(i => i.nombre === nombre && i.moneda === moneda);
+  if(existing) {
+    existing.montoInvertido += montoInvertido;
+    existing.valorActual = (existing.valorActual || existing.montoInvertido - montoInvertido) + valorActual;
+    existing.notas = notas || existing.notas;
+  } else {
+    inversiones.push({ id: Date.now(), nombre, moneda, montoInvertido, valorActual, fecha, notas });
+  }
+
+  save();
+  ['inv-monto-invertido','inv-valor-actual','inv-notas'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  showToast('Posición agregada ✓');
+  invTab('portfolio');
+  renderInversiones();
+}
+
+function editInvValor(id) {
+  const inv = inversiones.find(i=>i.id===id);
+  if(!inv) return;
+  const nuevoValor = prompt(`Valor actual de ${inv.nombre} (${inv.moneda}):`, inv.valorActual || inv.montoInvertido);
+  if(nuevoValor === null) return;
+  const v = parseFloat(nuevoValor);
+  if(!isNaN(v) && v >= 0) { inv.valorActual = v; save(); renderInversiones(); showToast('Valor actualizado ✓'); }
+}
+
+function deleteInv(id) {
+  inversiones = inversiones.filter(i=>i.id!==id);
+  save(); renderInversiones(); showToast('Posición eliminada');
+}
+
+document.getElementById('inv-instrumento')?.addEventListener('change', function() {
+  document.getElementById('inv-otro-nombre-wrap').style.display = this.value==='Otro' ? 'block' : 'none';
+});
+
 // ─── PROYECCIÓN ──────────────────────────────────────────────────────────────
 let projChart = null;
 function renderProyeccion() {
+  // Capital base = total invertido en USD
+  const tc = parseFloat(document.getElementById('inv-tc')?.value) || 1;
+  let capitalUSD = 0;
+  inversiones.forEach(inv => {
+    const v = inv.valorActual || inv.montoInvertido;
+    capitalUSD += inv.moneda==='USD' ? v : v/tc;
+  });
+  const capitalARS = capitalUSD * tc;
+
   const ahorro = parseFloat(document.getElementById('p-ahorro').value)||0;
-  const capital = parseFloat(document.getElementById('p-capital').value)||0;
   const rend = (parseFloat(document.getElementById('p-rend').value)||0)/100;
   const anos = Math.min(30, parseInt(document.getElementById('p-anos').value)||5);
   const mensual = rend/12;
   const labels=[], dataComp=[], dataSim=[];
-  let vComp = capital, vSim = capital;
+  let vComp = capitalARS, vSim = capitalARS;
   for(let i=0;i<=anos*12;i++) {
     if(i%12===0) { labels.push('Año '+(i/12)); dataComp.push(Math.round(vComp)); dataSim.push(Math.round(vSim)); }
     vComp = vComp*(1+mensual)+ahorro; vSim += ahorro;
   }
   const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
   const ctx = document.getElementById('proj-chart');
+  if(!ctx) return;
   if(projChart) projChart.destroy();
   projChart = new Chart(ctx, {
     type:'line',
@@ -853,7 +1181,7 @@ function renderProyeccion() {
     },
     options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+fmt(ctx.raw,true)}}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' $'+Math.round(ctx.raw).toLocaleString('es-AR')}}},
       scales:{
         y:{ticks:{callback:v=>v>=1000000?'$'+(v/1000000).toFixed(1)+'M':'$'+(v/1000).toFixed(0)+'K',font:{size:11},color:isDark?'#6b6860':'#9e9b95'},grid:{color:isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)'},border:{display:false}},
         x:{ticks:{font:{size:11},color:isDark?'#6b6860':'#9e9b95'},grid:{display:false},border:{display:false}}
@@ -864,11 +1192,11 @@ function renderProyeccion() {
   const finalSim = dataSim[dataSim.length-1];
   const ganancia = finalComp - finalSim;
   document.getElementById('proj-result').innerHTML = `
-    <div class="card-title">Resultado en ${anos} ${anos===1?'año':'años'}</div>
+    <div class="card-title">Resultado en ${anos} ${anos===1?'año':'años'} · Capital base: $${Math.round(capitalARS).toLocaleString('es-AR')}</div>
     <div class="metrics three" style="margin-bottom:0">
-      <div class="metric green"><div class="m-label">Patrimonio</div><div class="m-val">${fmt(finalComp,true)}</div><div class="m-sub">con rendimiento</div></div>
-      <div class="metric blue"><div class="m-label">Aportado</div><div class="m-val">${fmt(finalSim,true)}</div><div class="m-sub">capital + ahorro</div></div>
-      <div class="metric green"><div class="m-label">Extra</div><div class="m-val">${fmt(ganancia,true)}</div><div class="m-sub">por interés compuesto</div></div>
+      <div class="metric green"><div class="m-label">Patrimonio</div><div class="m-val">${finalComp>=1000000?'$'+(finalComp/1000000).toFixed(2)+'M':'$'+(finalComp/1000).toFixed(0)+'K'}</div><div class="m-sub">con rendimiento</div></div>
+      <div class="metric blue"><div class="m-label">Aportado</div><div class="m-val">${finalSim>=1000000?'$'+(finalSim/1000000).toFixed(2)+'M':'$'+(finalSim/1000).toFixed(0)+'K'}</div><div class="m-sub">capital + ahorro</div></div>
+      <div class="metric green"><div class="m-label">Extra</div><div class="m-val">${ganancia>=1000000?'$'+(ganancia/1000000).toFixed(2)+'M':'$'+(ganancia/1000).toFixed(0)+'K'}</div><div class="m-sub">interés compuesto</div></div>
     </div>
   `;
 }
@@ -887,6 +1215,7 @@ document.getElementById('modal-overlay').addEventListener('click', e => { if(e.t
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 document.getElementById('f-fecha').value = new Date().toISOString().slice(0,10);
+document.getElementById('inv-fecha').value = new Date().toISOString().slice(0,10);
 buildCatSelect();
 renderDashboard();
 </script>
