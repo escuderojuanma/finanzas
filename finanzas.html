@@ -323,9 +323,22 @@ canvas { width: 100% !important; }
           <button class="tipo-btn active gasto" id="btn-gasto" onclick="setTipo('gasto')">Gasto</button>
           <button class="tipo-btn ingreso" id="btn-ingreso" onclick="setTipo('ingreso')">Ingreso</button>
         </div>
-        <div class="form-group">
-          <label class="form-label">Monto (ARS)</label>
-          <input type="number" id="f-monto" placeholder="0" inputmode="decimal">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Moneda</label>
+            <select id="f-moneda" onchange="onMonedaChange(this.value)">
+              <option value="ARS">ARS $</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" id="f-monto-label">Monto (ARS)</label>
+            <input type="number" id="f-monto" placeholder="0" inputmode="decimal">
+          </div>
+        </div>
+        <div class="form-group" id="f-tc-wrap" style="display:none">
+          <label class="form-label">Tipo de cambio (ARS por USD)</label>
+          <input type="number" id="f-tc" placeholder="Ej: 1250" inputmode="decimal">
         </div>
         <div class="form-group">
           <label class="form-label">Descripción</label>
@@ -453,7 +466,7 @@ canvas { width: 100% !important; }
           <div id="capital-disp-mini" style="margin-bottom:12px"></div>
           <div class="form-group">
             <label class="form-label">Instrumento</label>
-            <select id="inv-instrumento">
+            <select id="inv-instrumento" onchange="onInstrumentoChange(this.value)">
               <option>COCOAUSD</option>
               <option>YPF 2029 (ON)</option>
               <option>Pampa Energía (ON)</option>
@@ -701,6 +714,8 @@ function renderDashboard() {
 function txHTML(t, showDel) {
   const c = catMap[t.cat]||{emoji:'📋',color:'#888'};
   const sign = t.tipo==='gasto' ? '-' : '+';
+  const montoDisplay = t.montoUSD ? `USD ${t.montoUSD.toLocaleString('es-AR')}` : fmt(t.monto, true);
+  const subDisplay = t.montoUSD ? `≈ ${fmt(t.monto, true)} ARS` : '';
   return `<div class="tx-item">
     <div class="tx-icon" style="background:${c.color}1a">${c.emoji}</div>
     <div class="tx-body">
@@ -708,8 +723,9 @@ function txHTML(t, showDel) {
       <div class="tx-meta">${t.cat}${t.medio?' · '+t.medio:''}</div>
     </div>
     <div class="tx-right">
-      <div class="tx-amount ${t.tipo}">${sign} ${fmt(t.monto,true)}</div>
-      <div class="tx-date-small">${t.fecha}</div>
+      <div class="tx-amount ${t.tipo}">${sign} ${montoDisplay}</div>
+      <div class="tx-date-small">${subDisplay || t.fecha}</div>
+      ${subDisplay ? `<div class="tx-date-small">${t.fecha}</div>` : ''}
     </div>
     ${showDel ? `<button class="tx-del" onclick="deleteTx(${t.id})">✕</button>` : ''}
   </div>`;
@@ -730,6 +746,12 @@ function buildInsights(gastos, ingresos, sorted, diffPct) {
 }
 
 // ─── REGISTRAR ──────────────────────────────────────────────────────────────
+function onMonedaChange(val) {
+  const isUSD = val === 'USD';
+  document.getElementById('f-tc-wrap').style.display = isUSD ? 'block' : 'none';
+  document.getElementById('f-monto-label').textContent = isUSD ? 'Monto (USD)' : 'Monto (ARS)';
+}
+
 function setTipo(tipo) {
   currentTipo = tipo;
   document.getElementById('btn-gasto').className = 'tipo-btn' + (tipo==='gasto'?' active gasto':'');
@@ -750,27 +772,44 @@ function toggleDestinarInv() {
 }
 
 function addTx() {
+  const moneda = document.getElementById('f-moneda').value;
   const monto = parseFloat(document.getElementById('f-monto').value);
   const desc = document.getElementById('f-desc').value.trim();
   const fecha = document.getElementById('f-fecha').value;
   if(!monto || monto <= 0) { showToast('Ingresá un monto válido'); return; }
   if(!desc) { showToast('Ingresá una descripción'); return; }
   if(!fecha) { showToast('Seleccioná la fecha'); return; }
+
+  let montoARS = monto;
+  let montoUSD = null;
+  if(moneda === 'USD') {
+    const tc = parseFloat(document.getElementById('f-tc').value);
+    if(!tc || tc <= 0) { showToast('Ingresá el tipo de cambio'); return; }
+    montoARS = monto * tc;
+    montoUSD = monto;
+  }
+
   txs.push({
-    id: Date.now(), tipo: currentTipo, monto, desc, fecha,
+    id: Date.now(), tipo: currentTipo, monto: montoARS, montoUSD, moneda,
+    desc, fecha,
     cat: document.getElementById('f-cat').value,
     medio: document.getElementById('f-medio').value,
     paraInversion: destinarInv
   });
   if(currentTipo === 'ingreso' && destinarInv) {
-    capitalDisponible += monto;
-    showToast(`Registrado. $${Math.round(monto).toLocaleString('es-AR')} disponible para invertir ✓`);
+    capitalDisponible += montoARS;
+    const dispStr = moneda === 'USD' ? `USD ${monto.toLocaleString('es-AR')} (= $${Math.round(montoARS).toLocaleString('es-AR')})` : `$${Math.round(montoARS).toLocaleString('es-AR')}`;
+    showToast(`Registrado. ${dispStr} disponible para invertir ✓`);
   } else {
-    showToast('Transacción registrada ✓');
+    const montoStr = moneda === 'USD' ? `USD ${monto.toLocaleString('es-AR')}` : `$${Math.round(montoARS).toLocaleString('es-AR')}`;
+    showToast(`${montoStr} registrado ✓`);
   }
   save();
   document.getElementById('f-monto').value = '';
   document.getElementById('f-desc').value = '';
+  document.getElementById('f-moneda').value = 'ARS';
+  document.getElementById('f-tc-wrap').style.display = 'none';
+  document.getElementById('f-monto-label').textContent = 'Monto (ARS)';
   destinarInv = false;
   document.getElementById('inv-switch').classList.remove('on');
   document.getElementById('inv-toggle-wrap').style.display = 'none';
@@ -1061,7 +1100,7 @@ function renderInversiones() {
       const monSym = inv.moneda === 'USD' ? 'USD ' : '$';
       const pnlClass = pnl > 0 ? 'pos' : pnl < 0 ? 'neg' : 'neu';
       const pnlSign = pnl >= 0 ? '+' : '';
-      return `<div class="inv-position">
+      return `<div class="inv-position" id="inv-pos-${inv.id}">
         <div class="inv-badge" style="background:${c.bg};color:${c.color}">${initials}</div>
         <div class="inv-body">
           <div class="inv-name">${inv.nombre}</div>
@@ -1129,10 +1168,30 @@ function addInversion() {
 function editInvValor(id) {
   const inv = inversiones.find(i=>i.id===id);
   if(!inv) return;
-  const nuevoValor = prompt(`Valor actual de ${inv.nombre} (${inv.moneda}):`, inv.valorActual || inv.montoInvertido);
-  if(nuevoValor === null) return;
-  const v = parseFloat(nuevoValor);
-  if(!isNaN(v) && v >= 0) { inv.valorActual = v; save(); renderInversiones(); showToast('Valor actualizado ✓'); }
+  const valorActual = inv.valorActual || inv.montoInvertido;
+  const nuevoHTML = `<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;margin-top:8px" id="edit-inv-${id}">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Nuevo valor actual (${inv.moneda})</div>
+    <div style="display:flex;gap:8px">
+      <input type="number" inputmode="decimal" value="${valorActual}" id="edit-val-${id}" style="flex:1;font-family:DM Mono,monospace">
+      <button onclick="confirmEditInv(${id})" style="padding:10px 14px;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius-sm);font-weight:600;cursor:pointer;font-size:13px">OK</button>
+      <button onclick="document.getElementById('edit-inv-${id}').remove()" style="padding:10px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;color:var(--text2)">✕</button>
+    </div>
+  </div>`;
+  const pos = document.getElementById('inv-pos-'+id);
+  if(pos) {
+    const existing = document.getElementById('edit-inv-'+id);
+    if(existing) existing.remove(); else pos.insertAdjacentHTML('afterend', nuevoHTML);
+  }
+}
+
+function confirmEditInv(id) {
+  const input = document.getElementById('edit-val-'+id);
+  if(!input) return;
+  const v = parseFloat(input.value);
+  if(!isNaN(v) && v >= 0) {
+    const inv = inversiones.find(i=>i.id===id);
+    if(inv) { inv.valorActual = v; save(); renderInversiones(); showToast('Valor actualizado ✓'); }
+  }
 }
 
 function deleteInv(id) {
@@ -1140,9 +1199,10 @@ function deleteInv(id) {
   save(); renderInversiones(); showToast('Posición eliminada');
 }
 
-document.getElementById('inv-instrumento')?.addEventListener('change', function() {
-  document.getElementById('inv-otro-nombre-wrap').style.display = this.value==='Otro' ? 'block' : 'none';
-});
+function onInstrumentoChange(val) {
+  const wrap = document.getElementById('inv-otro-nombre-wrap');
+  if(wrap) wrap.style.display = val==='Otro' ? 'block' : 'none';
+}
 
 // ─── PROYECCIÓN ──────────────────────────────────────────────────────────────
 let projChart = null;
@@ -1214,10 +1274,15 @@ function saveApiKey() {
 document.getElementById('modal-overlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
-document.getElementById('f-fecha').value = new Date().toISOString().slice(0,10);
-document.getElementById('inv-fecha').value = new Date().toISOString().slice(0,10);
-buildCatSelect();
-renderDashboard();
+try {
+  const hoy = new Date().toISOString().slice(0,10);
+  const fFecha = document.getElementById('f-fecha');
+  const invFecha = document.getElementById('inv-fecha');
+  if(fFecha) fFecha.value = hoy;
+  if(invFecha) invFecha.value = hoy;
+  buildCatSelect();
+  renderDashboard();
+} catch(e) { console.error('Init error:', e); }
 </script>
 </body>
 </html>
