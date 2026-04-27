@@ -467,23 +467,8 @@ canvas { width: 100% !important; }
       <!-- Resumen portfolio -->
       <div class="metrics" id="inv-metrics-top" style="margin-bottom:12px"></div>
 
-      <!-- Meta USD -->
-      <div class="card">
-        <div class="card-title">Meta de capital (USD 180.000–200.000)</div>
-        <div class="progress-header">
-          <span id="inv-meta-label" style="font-size:13px;color:var(--text2)">USD 0 acumulado</span>
-          <span id="inv-meta-pct" class="progress-pct">0%</span>
-        </div>
-        <div class="progress-track"><div class="progress-fill" id="inv-meta-fill" style="width:0%"></div></div>
-        <div class="progress-footer" style="margin-top:6px">
-          <span>Objetivo: USD 180.000</span>
-          <span id="inv-meta-faltan">Faltan: USD 180.000</span>
-        </div>
-        <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
-          <input type="number" id="inv-tc" placeholder="Tipo de cambio USD" inputmode="decimal" style="flex:1" oninput="renderInversiones()">
-          <span style="font-size:12px;color:var(--text3);flex-shrink:0">ARS/USD</span>
-        </div>
-      </div>
+      <!-- Portfolio total -->
+      <div class="card" id="inv-total-card"></div>
 
       <!-- Sub tabs -->
       <div class="sub-tabs">
@@ -1173,38 +1158,45 @@ function toggleUsarCapital() {
 }
 
 function renderInversiones() {
-  const tc = parseFloat(document.getElementById('inv-tc')?.value) || 0;
-
   // Totales portfolio
   let totalUSD = 0, totalInvertidoUSD = 0;
+  let totalARS = 0, totalInvertidoARS = 0;
   inversiones.forEach(inv => {
     const valorAct = inv.valorActual || inv.montoInvertido;
-    const invertido = inv.montoInvertido;
     if(inv.moneda === 'USD') {
       totalUSD += valorAct;
-      totalInvertidoUSD += invertido;
-    } else if(tc > 0) {
-      totalUSD += valorAct / tc;
-      totalInvertidoUSD += invertido / tc;
+      totalInvertidoUSD += inv.montoInvertido;
+    } else {
+      totalARS += valorAct;
+      totalInvertidoARS += inv.montoInvertido;
     }
   });
   const pnlUSD = totalUSD - totalInvertidoUSD;
   const pnlPct = totalInvertidoUSD > 0 ? (pnlUSD/totalInvertidoUSD*100).toFixed(1) : 0;
 
   // Métricas top
-  const fmtUSD = v => 'USD ' + Math.round(v).toLocaleString('es-AR');
   document.getElementById('inv-metrics-top').innerHTML = `
-    <div class="metric blue"><div class="m-label">Valor actual</div><div class="m-val">${fmtUSD(totalUSD)}</div><div class="m-sub">${tc>0?'≈ $'+Math.round(totalUSD*tc).toLocaleString('es-AR'):tc===0?'Ingresá TC':''}</div></div>
-    <div class="metric ${pnlUSD>=0?'green':'red'}"><div class="m-label">Ganancia</div><div class="m-val">${pnlUSD>=0?'+':''}${fmtUSD(pnlUSD)}</div><div class="m-sub">${pnlPct>0?'+':''}${pnlPct}%</div></div>
+    <div class="metric blue"><div class="m-label">Portfolio USD</div><div class="m-val">USD ${totalUSD.toLocaleString('es-AR',{maximumFractionDigits:0})}</div><div class="m-sub">${inversiones.filter(i=>i.moneda==='USD').length} posiciones</div></div>
+    <div class="metric ${pnlUSD>=0?'green':'red'}"><div class="m-label">Ganancia</div><div class="m-val">${pnlUSD>=0?'+':''}USD ${Math.abs(pnlUSD).toLocaleString('es-AR',{maximumFractionDigits:0})}</div><div class="m-sub">${pnlPct>0?'+':''}${pnlPct}%</div></div>
   `;
 
-  // Meta USD
-  const META_USD = 180000;
-  const pctMeta = Math.min(100, Math.round(totalUSD/META_USD*100));
-  document.getElementById('inv-meta-label').textContent = `USD ${Math.round(totalUSD).toLocaleString('es-AR')} acumulado`;
-  document.getElementById('inv-meta-pct').textContent = pctMeta + '%';
-  document.getElementById('inv-meta-fill').style.width = pctMeta + '%';
-  document.getElementById('inv-meta-faltan').textContent = `Faltan: USD ${Math.round(Math.max(0,META_USD-totalUSD)).toLocaleString('es-AR')}`;
+  // Total card simple
+  const totalCard = document.getElementById('inv-total-card');
+  if(totalCard) {
+    totalCard.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="card-title" style="margin-bottom:4px">Total invertido</div>
+          <div style="font-size:22px;font-weight:600;font-family:DM Mono,monospace;color:var(--blue)">USD ${totalUSD.toLocaleString('es-AR',{maximumFractionDigits:2})}</div>
+          ${totalARS>0?`<div style="font-size:13px;color:var(--text3);margin-top:2px">+ $${Math.round(totalARS).toLocaleString('es-AR')} ARS</div>`:''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;color:var(--text3)">rendimiento</div>
+          <div style="font-size:18px;font-weight:600;color:${pnlUSD>=0?'var(--green)':'var(--red)'};font-family:DM Mono,monospace">${pnlUSD>=0?'+':''}${pnlPct}%</div>
+        </div>
+      </div>
+    `;
+  }
 
   // Capital disponible banner
   const capWrap = document.getElementById('capital-banner-wrap');
@@ -1343,13 +1335,12 @@ function onInstrumentoChange(val) {
 let projChart = null;
 function renderProyeccion() {
   // Capital base = total invertido en USD
-  const tc = parseFloat(document.getElementById('inv-tc')?.value) || 1;
   let capitalUSD = 0;
   inversiones.forEach(inv => {
     const v = inv.valorActual || inv.montoInvertido;
-    capitalUSD += inv.moneda==='USD' ? v : v/tc;
+    if(inv.moneda === 'USD') capitalUSD += v;
   });
-  const capitalARS = capitalUSD * tc;
+  const capitalARS = capitalUSD * 1000;
 
   const ahorro = parseFloat(document.getElementById('p-ahorro').value)||0;
   const rend = (parseFloat(document.getElementById('p-rend').value)||0)/100;
