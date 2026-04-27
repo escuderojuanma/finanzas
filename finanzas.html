@@ -651,12 +651,20 @@ const catMap = {};
 
 let txs = JSON.parse(localStorage.getItem('fin_txs') || '[]');
 let metas = JSON.parse(localStorage.getItem('fin_metas') || '[]');
-let inversiones = JSON.parse(localStorage.getItem('fin_inv') || '[]');
 let capitalDisponible = parseFloat(localStorage.getItem('fin_cap') || '0');
 let currentTipo = 'gasto';
 let importedTxs = [];
 let destinarInv = false;
 let usarCapital = false;
+
+const INV_DEFAULT = [
+  { id: 1001, nombre: 'COCOAUSD',            moneda: 'USD', montoInvertido: 1702.37, valorActual: 1702.37, fecha: '2025-04-01', notas: '1578.10 cuotapartes' },
+  { id: 1002, nombre: 'YPF 2029 (ON)',        moneda: 'USD', montoInvertido: 717.22,  valorActual: 717.22,  fecha: '2025-04-01', notas: '639 YMCIO' },
+  { id: 1003, nombre: 'Pampa Energía (ON)',   moneda: 'USD', montoInvertido: 625.70,  valorActual: 625.70,  fecha: '2025-04-01', notas: '566 MGCQO' },
+  { id: 1004, nombre: 'Pampa CL22 (ON)',      moneda: 'USD', montoInvertido: 597.66,  valorActual: 597.66,  fecha: '2025-04-01', notas: '580 MGCNO' },
+];
+let inversiones = JSON.parse(localStorage.getItem('fin_inv') || 'null');
+if (!inversiones) { inversiones = INV_DEFAULT; }
 
 function save() {
   localStorage.setItem('fin_txs', JSON.stringify(txs));
